@@ -1,0 +1,15 @@
+# FILE INDEX
+1. package.json
+2. server.ts
+3. src/App.tsx
+4. src/components/CartView.tsx
+5. src/components/Chatbot.tsx
+6. src/firebase.ts
+7. src/index.css
+8. src/main.tsx
+9. vite.config.ts
+
+---
+
+# CONSOLIDATED CODE
+(Bạn có thể mở từng file trong danh sách tại File Explorer bên trái để xem đầy đủ nội dung)

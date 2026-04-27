@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/system/admins) && get(/databases/$(database)/documents/system/admins).data.uids.hasAny([request.auth.uid]);
+    }
+
+    function isAuthenticated() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['balance', 'role']) &&
+             data.balance is number && data.balance >= 0 &&
+             data.role is string && (data.role == 'user' || data.role == 'admin');
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId || isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidId(userId) && isValidUser(incoming()) && incoming().role == 'user' && incoming().keys().size() == 2;
+      allow update: if isAuthenticated() && isValidUser(incoming()) && (
+        isAdmin() ||
+        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['pin', 'inventory']))
+      );
+      allow delete: if false;
+    }
+
+    function isValidRecharge(data) {
+      return data.keys().hasAll(['tiktokId', 'amount', 'status']) &&
+             data.tiktokId is string && data.tiktokId.size() <= 100 &&
+             data.amount is number && data.amount > 0 &&
+             data.status is string && (data.status == 'waiting' || data.status == 'success' || data.status == 'error');
+    }
+
+    match /recharges/{rechargeId} {
+      allow read: if isAuthenticated() && existing().tiktokId == request.auth.uid || isAdmin();
+      allow list: if isAuthenticated() && resource.data.tiktokId == request.auth.uid || isAdmin();
+      allow create: if isAuthenticated() && isValidId(rechargeId) && isValidRecharge(incoming()) && incoming().tiktokId == request.auth.uid && incoming().status == 'waiting' && incoming().keys().size() == 3;
+      allow update: if isAdmin() && isValidRecharge(incoming());
+      allow delete: if false;
+    }
+
+    function isValidSystem(data) {
+      return data.keys().hasAll(['jackpotAmount', 'winRate']) &&
+             data.jackpotAmount is number && data.jackpotAmount >= 0 &&
+             data.winRate is number && data.winRate >= 0 && data.winRate <= 1;
+    }
+
+    match /system/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidId(docId) && isValidSystem(incoming());
+      allow update: if isAdmin() && isValidSystem(incoming());
+      allow delete: if false;
+    }
+  }
+}

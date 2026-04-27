@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user profile and balance",
+      "type": "object",
+      "properties": {
+        "balance": { "type": "number" },
+        "pin": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "inventory": { "type": "array" }
+      }
+    },
+    "Recharge": {
+      "title": "Recharge",
+      "description": "A top-up request",
+      "type": "object",
+      "properties": {
+        "tiktokId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string" }
+      }
+    },
+    "System": {
+      "title": "System Config",
+      "description": "Configuration and history",
+      "type": "object",
+      "properties": {
+        "jackpotAmount": { "type": "number" },
+        "winRate": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user data"
+    },
+    "recharges/{rechargeId}": {
+      "schema": { "$ref": "#/entities/Recharge" },
+      "description": "Stores payment/topup requests"
+    },
+    "system/{docId}": {
+      "schema": { "$ref": "#/entities/System" },
+      "description": "Global config and arrays like history/vouchers"
+    }
+  }
+}
